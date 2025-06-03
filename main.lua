@@ -1,3 +1,7 @@
+require('defaults')
+Controls = require('controls.main')
+Graphics = require('graphics.main')
+
 Rectangle = love.image.newImageData(32, 32)
 Player = love.graphics.newImage(Rectangle)
 CurrentKey = ''
@@ -7,64 +11,7 @@ Position = {
 }
 Settings = {}
 SpeedPerPixels = 32
-Color = {
-	r=1,
-	g=0,
-	b=0,
-}
 ElapsedTime = 0
-
-local ROUNDED_OFF = 0.999999
-
-local function redistributeRGB()
-	Color.r = Color.r + Color.g + Color.b
-	Color.g = Color.r - (Color.g + Color.b)
-	Color.b = Color.r - (Color.g + Color.b)
-	Color.r = Color.r - (Color.g + Color.b)
-end
-
-local function recolorImagedata(imagedata, custom_color, x_range, y_range)
-	local color_table = {
-		custom_color == nil and Color.r or custom_color,
-		custom_color == nil and Color.g or custom_color,
-		custom_color == nil and Color.b or custom_color,
-		1
-	}
-	x_range = x_range == nil and SpeedPerPixels - 1 or x_range
-	y_range = y_range == nil and SpeedPerPixels - 1 or y_range
-	for x = 0, x_range, 1 do
-		for y = 0, y_range, 1 do
-			imagedata:setPixel(x, y, color_table)
-		end
-	end
-	return imagedata
-end
-
-local function controlsMovements()
-	if CurrentKey == Settings.controls.UP then
-        if Position.y - SpeedPerPixels < 0 then return end
-        Position.y = Position.y - SpeedPerPixels
-    end
-	if CurrentKey == Settings.controls.RIGHT then
-		if Position.x + SpeedPerPixels >= love.graphics.getWidth() then return end
-		Position.x = Position.x + SpeedPerPixels
-	end
-    if CurrentKey == Settings.controls.DOWN then
-        if Position.y + SpeedPerPixels >= love.graphics.getHeight() then return end
-        Position.y = Position.y + SpeedPerPixels
-    end
-	if CurrentKey == Settings.controls.LEFT then
-		if Position.x - SpeedPerPixels < 0 then return end
-		Position.x = Position.x - SpeedPerPixels
-	end
-end
-
-local function controlsMechanics()
-	if CurrentKey == Settings.controls.CHANGE_COLOR then
-		redistributeRGB()
-        Player:replacePixels(recolorImagedata(Rectangle))
-    end
-end
 
 function love.load()
 	Settings.controls = {
@@ -77,7 +24,7 @@ function love.load()
     love.window.updateMode(800, 640, {
         fullscreen = false
     })
-	Player:replacePixels(recolorImagedata(Rectangle, 255))
+	Player:replacePixels(Graphics.recolorImagedata(Rectangle, 255))
     love.graphics.setBackgroundColor(80,0,80,1)
 end
 
@@ -88,9 +35,8 @@ function love.update(dt)
 end
 
 function love.keypressed(key)
-    CurrentKey = key
-	controlsMechanics()
-    controlsMovements()
+	Controls.mechanics(key, Settings, Player, Rectangle)
+    Controls.movements(key, Settings, Position, SpeedPerPixels)
 end
 
 function love.draw()
