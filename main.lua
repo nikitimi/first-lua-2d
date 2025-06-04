@@ -11,6 +11,7 @@ Position = {
 }
 Settings = {}
 SpeedPerPixels = 32
+ElapsedFrames = 0
 ElapsedTime = 0
 
 function love.load()
@@ -26,12 +27,17 @@ function love.load()
     })
 	Player:replacePixels(Graphics.recolorImagedata(Rectangle, 255))
     love.graphics.setBackgroundColor(80,0,80,1)
+	
 end
 
+
 function love.update(dt)
-    ElapsedTime = ElapsedTime + math.floor((SpeedPerPixels * dt) + ROUNDED_OFF)
+	FPS = 60
+    ElapsedFrames = ElapsedFrames + math.floor((FPS * dt) + ROUNDED_OFF)
+	ElapsedTime = math.fmod(ElapsedFrames, FPS) == 0
+		and ElapsedTime + 1
+		or ElapsedTime
     Movement = (SpeedPerPixels * dt) + ROUNDED_OFF
-    
 end
 
 function love.keypressed(key)
