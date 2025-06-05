@@ -72,25 +72,32 @@ function love.load()
 		dx = 0,
 		dy = 0,
 	}
-
+	KeyPressHistory = {}
 	Controls = {
 		UP = 'w',
 		LEFT = 'a',
 		DOWN = 's',
 		RIGHT = 'd',
+		SPEED_UP = 'tab'
+	}
+	BaseLimits = {
+		movement = 2,
+		comboLimit = 3
+	}
+	BaseValues = {
+		movement = 1
 	}
 end
 
 function love.update(dt)
 	---@type {x: number, y: number, dx: number, dy: number}
 	local playerCoordinates = Coordinates[Player]
-	local movementBaseValue = 1
 	if playerCoordinates.x ~= playerCoordinates.dx then
-		local movement = playerCoordinates.x > playerCoordinates.dx and -movementBaseValue or movementBaseValue
+		local movement = playerCoordinates.x > playerCoordinates.dx and -BaseValues.movement or BaseValues.movement
 		playerCoordinates.x = playerCoordinates.x + movement
 	end
 	if playerCoordinates.y ~= playerCoordinates.dy then
-		local movement = playerCoordinates.y > playerCoordinates.dy and -movementBaseValue or movementBaseValue
+		local movement = playerCoordinates.y > playerCoordinates.dy and -BaseValues.movement or BaseValues.movement
 		playerCoordinates.y = playerCoordinates.y + movement
 	end
 end
@@ -100,25 +107,52 @@ function love.draw()
 	local playerCoordinates = Coordinates[Player]
 	love.graphics.draw(Player, playerCoordinates.x, playerCoordinates.y, nil, 2, 2)
 	love.graphics.print(
-		('X: %d\tY: %d\tdX: %d\tdY: %d')
-		:format(playerCoordinates.x, playerCoordinates.y,playerCoordinates.dx,playerCoordinates.dy), 
+		('Current Key: %s\nX: %d\tY: %d\tdX: %d\tdY: %d\tSPEED: %d')
+		:format(
+			KeyPressHistory[#KeyPressHistory] and KeyPressHistory[#KeyPressHistory] or '',
+			playerCoordinates.x,
+			playerCoordinates.y,
+			playerCoordinates.dx,
+			playerCoordinates.dy,
+			BaseValues.movement
+		),
 		320,
 		320
 	)
 end
 
 function love.keypressed(key)
+	local speedUpValue = 'speed_up'
 	local keysWithMovements = {
 		[Controls.UP]='y'..BASE__PIXEL*-1,
 		[Controls.LEFT]='x'..BASE__PIXEL*-1,
 		[Controls.DOWN]='y'..BASE__PIXEL,
-		[Controls.RIGHT]='x'..BASE__PIXEL
+		[Controls.RIGHT]='x'..BASE__PIXEL,
+		[Controls.SPEED_UP]=speedUpValue..1
 	}
+
+	KeyPressHistory[(#KeyPressHistory and #KeyPressHistory or 0) + 1] = key
+	if #KeyPressHistory > BaseLimits.comboLimit then
+		table.remove(KeyPressHistory, 1)
+	end
+
 	if not insideTheList(keysWithMovements, key) then return end
-	
 	local control = keysWithMovements[key]
-	---@type 'x'|'y'
 	local coordinate = control:sub(1, 1)
-	local value = tonumber(control:sub(2)) and tonumber(control:sub(2)) or 0
-	moveDrawing(Player, coordinate, value)
+	if coordinate == 'x' or coordinate == 'y' then
+		local value = tonumber(control:sub(2)) and tonumber(control:sub(2)) or 0
+		moveDrawing(Player, coordinate, value)
+	end
+	if control:match(speedUpValue) then
+		local newMovementSpeedValue = tonumber(control:sub(#control)) + 1
+		if BaseValues.movement >= BaseLimits.movement then
+			newMovementSpeedValue = 1
+		end
+		keysWithMovements[Controls.SPEED_UP] = speedUpValue..(newMovementSpeedValue)
+		BaseValues.movement = newMovementSpeedValue
+	end
+end
+
+function love.quit()
+	print(unpack(KeyPressHistory))
 end
