@@ -61,10 +61,11 @@ local function insideTheList(list, value)
 end
 
 function love.load()
+	local localMath = require('modules.math')
 	local characterData = fillCharacterBasis(love.image.newImageData(BASE__PIXEL, BASE__PIXEL * 2), 255, 200, 0)
 	Player = love.graphics.newImage(characterData)
 	Player:setFilter("nearest", "nearest")
-
+	Frames = 0
 	Coordinates = {}
 	Coordinates[Player] = {
 		x = 0,
@@ -72,6 +73,7 @@ function love.load()
 		dx = 0,
 		dy = 0,
 	}
+	MovementSpeedUpPrimeFactor = localMath.PrimeFactor(BASE__PIXEL)
 	KeyPressHistory = {}
 	Controls = {
 		UP = 'w',
@@ -81,7 +83,7 @@ function love.load()
 		SPEED_UP = 'tab'
 	}
 	BaseLimits = {
-		movement = 2,
+		movement = #MovementSpeedUpPrimeFactor,
 		comboLimit = 3
 	}
 	BaseValues = {
@@ -92,12 +94,16 @@ end
 function love.update(dt)
 	---@type {x: number, y: number, dx: number, dy: number}
 	local playerCoordinates = Coordinates[Player]
+	local speed = MovementSpeedUpPrimeFactor[BaseValues.movement]
+	Frames = Frames+1
 	if playerCoordinates.x ~= playerCoordinates.dx then
-		local movement = playerCoordinates.x > playerCoordinates.dx and -BaseValues.movement or BaseValues.movement
+		print('DX', playerCoordinates.x, playerCoordinates.dx)
+		local movement = playerCoordinates.x > playerCoordinates.dx and -speed or speed
 		playerCoordinates.x = playerCoordinates.x + movement
 	end
 	if playerCoordinates.y ~= playerCoordinates.dy then
-		local movement = playerCoordinates.y > playerCoordinates.dy and -BaseValues.movement or BaseValues.movement
+		-- print('DY', playerCoordinates.y, playerCoordinates.dy)
+		local movement = playerCoordinates.y > playerCoordinates.dy and -speed or speed
 		playerCoordinates.y = playerCoordinates.y + movement
 	end
 end
@@ -107,14 +113,15 @@ function love.draw()
 	local playerCoordinates = Coordinates[Player]
 	love.graphics.draw(Player, playerCoordinates.x, playerCoordinates.y, nil, 2, 2)
 	love.graphics.print(
-		('Current Key: %s\nX: %d\tY: %d\tdX: %d\tdY: %d\tSPEED: %d')
+		('Current Key: %s\tTime elapsed: %d\nX: %d\tY: %d\tdX: %d\tdY: %d\tSPEED: %d')
 		:format(
-			KeyPressHistory[#KeyPressHistory] and KeyPressHistory[#KeyPressHistory] or '',
+			KeyPressHistory[#KeyPressHistory] or '',
+			Frames / 60,
 			playerCoordinates.x,
 			playerCoordinates.y,
 			playerCoordinates.dx,
 			playerCoordinates.dy,
-			BaseValues.movement
+			MovementSpeedUpPrimeFactor[BaseValues.movement]
 		),
 		320,
 		320
@@ -128,10 +135,10 @@ function love.keypressed(key)
 		[Controls.LEFT]='x'..BASE__PIXEL*-1,
 		[Controls.DOWN]='y'..BASE__PIXEL,
 		[Controls.RIGHT]='x'..BASE__PIXEL,
-		[Controls.SPEED_UP]=speedUpValue..1
+		[Controls.SPEED_UP]=speedUpValue
 	}
 
-	KeyPressHistory[(#KeyPressHistory and #KeyPressHistory or 0) + 1] = key
+	KeyPressHistory[#KeyPressHistory+1] = key
 	if #KeyPressHistory > BaseLimits.comboLimit then
 		table.remove(KeyPressHistory, 1)
 	end
@@ -144,15 +151,14 @@ function love.keypressed(key)
 		moveDrawing(Player, coordinate, value)
 	end
 	if control:match(speedUpValue) then
-		local newMovementSpeedValue = tonumber(control:sub(#control)) + 1
-		if BaseValues.movement >= BaseLimits.movement then
-			newMovementSpeedValue = 1
+		BaseValues.movement = BaseValues.movement + 1
+		if BaseValues.movement > BaseLimits.movement then
+			BaseValues.movement = 1
 		end
-		keysWithMovements[Controls.SPEED_UP] = speedUpValue..(newMovementSpeedValue)
-		BaseValues.movement = newMovementSpeedValue
 	end
 end
 
 function love.quit()
 	print(unpack(KeyPressHistory))
+	print(Coordinates[Player].x, Coordinates[Player].y, Coordinates[Player].dx, Coordinates[Player].dy)
 end
