@@ -46,7 +46,7 @@ function love.load()
         fullscreen = false
     })
 	Player:replacePixels(Graphics.recolorImagedata(Rectangle, 255))
-    love.graphics.setBackgroundColor(80,0,80,1)
+    love.graphics.setBackgroundColor(60/255,0,80/255,1)
 	local raw_data = ''
 	for x=1,SpeedPerPixels do
 		for y=1,SpeedPerPixels do
@@ -112,7 +112,9 @@ function love.draw()
     love.graphics.print(("Current Key: %s\nElapsed time: %d(s)"):format(CurrentKey, ElapsedTime), offset_positions.x, offset_positions.y)
     love.graphics.draw(Player, Position.x, Position.y)
 
-	love.graphics.draw(love.graphics.newImage(Character), C.pos.x, C.pos.y)
+	local other = love.graphics.newImage(Character)
+	other:replacePixels(Graphics.recolorImagedata(Character, {r=255,g=30,b=50}))
+	love.graphics.draw(other, C.pos.x, C.pos.y)
 	love.graphics.print(CPOSX, 32, 32)
 	love.graphics.print(CPOSY, 64, 32)
 	love.graphics.print(C.pos.x, 256, 32)
